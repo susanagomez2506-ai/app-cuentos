@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cuentos para ordenar</title>
+<style>
+:root{--bg:#e9f4fb;--ink:#1f2a44;--sun:#ffc93c;--mint:#4cc3a0;--sky:#3f8fd8;--card:#fff;--soft:#fff4cc}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Verdana,"Trebuchet MS",sans-serif;font-size:1.25rem;line-height:1.8;letter-spacing:.03em;min-height:100vh}
+main{max-width:640px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:1.9rem;line-height:1.3;margin:10px 0 6px;text-align:center}
+p.sub{text-align:center;margin:0 0 20px}
+button{font:inherit;color:inherit;border:0;cursor:pointer;border-radius:18px;padding:12px 22px;min-height:56px;background:var(--sun);font-weight:700;box-shadow:0 4px 0 #d9a514}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 #d9a514}
+button:focus-visible,.card:focus-visible{outline:4px solid var(--sky);outline-offset:3px}
+button.go{background:var(--mint);box-shadow:0 4px 0 #2f9c7c}
+button.ghost{background:#fff;box-shadow:0 4px 0 #c8d6e2}
+.row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.story{display:flex;align-items:center;gap:16px;width:100%;text-align:left;background:#fff;box-shadow:0 4px 0 #c8d6e2;margin-bottom:16px;padding:16px 20px}
+.story .big{font-size:3rem;line-height:1}
+.scene{font-size:5.5rem;text-align:center;line-height:1.2;background:var(--soft);border-radius:28px;padding:18px;margin:10px 0}
+.text{background:#fff;border-radius:24px;padding:20px 22px;font-size:1.4rem;line-height:1.9}
+.dots{display:flex;justify-content:center;gap:8px;margin:12px 0}
+.dots i{width:14px;height:14px;border-radius:50%;background:#c8d6e2}
+.dots i.on{background:var(--sky)}
+#list{display:flex;flex-direction:column;gap:12px;margin-top:14px;position:relative}
+.card{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:20px;padding:12px 14px;border:4px solid transparent;touch-action:none;user-select:none;cursor:grab;box-shadow:0 3px 0 #c8d6e2}
+.card .e{font-size:2.4rem;line-height:1}
+.card .t{flex:1;font-size:1.1rem;line-height:1.5}
+.card.ok{border-color:var(--mint);background:#e6f8f1}
+.card.drag{position:relative;z-index:5;box-shadow:0 12px 24px rgba(31,42,68,.25);cursor:grabbing;opacity:.95}
+.mv{display:flex;flex-direction:column;gap:6px}
+.mv button{min-height:44px;padding:0 12px;border-radius:12px;font-size:1rem;background:#eef3f8;box-shadow:none}
+#msg{min-height:3.6em;text-align:center;font-weight:700;margin:14px 0 0}
+.party{font-size:4rem;text-align:center;margin:10px 0}
+.tick{color:var(--mint)}
+@media (prefers-reduced-motion:no-preference){.party span{display:inline-block;animation:b 1s ease-in-out infinite alternate}.party span:nth-child(2){animation-delay:.2s}.party span:nth-child(3){animation-delay:.4s}}
+@keyframes b{to{transform:translateY(-14px)}}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+const S=[
+{id:0,t:"Lúa y el robot aspiradora",e:"🤖",p:[
+["🛋️","Lúa vio que su robot aspiradora se había quedado atascado debajo del sofá. Pitaba muy bajito, como si pidiera ayuda.","El robot se atasca bajo el sofá"],
+["🙋‍♀️","Lúa se tumbó en el suelo y lo sacó con mucho cuidado. Por suerte, el robot no se había roto.","Lúa rescata al robot"],
+["🧦","Entonces Lúa guardó los calcetines que estaban tirados. Así el robot ya no tendría más problemas.","Lúa recoge los calcetines"],
+["✨","El robot limpió toda la sala sin atascarse. Lúa le dio las gracias y los dos acabaron muy contentos.","El robot limpia la sala"]]},
+{id:1,t:"Teo y la tablet sin batería",e:"🔋",p:[
+["📱","Teo quería jugar con su tablet, pero se había quedado sin batería. Estaba muy enfadado.","La tablet de Teo no tiene batería"],
+["🔌","Su mamá la puso a cargar y le dijo que tardaría un buen rato. Teo suspiró.","Mamá pone la tablet a cargar"],
+["⚽","Teo bajó al parque y encontró a su amigo Iván con una pelota. Jugaron hasta quedar cansados.","Teo juega a la pelota con Iván"],
+["😄","Al volver a casa, Teo se dio cuenta de que ya no tenía tantas ganas de tablet. Se había divertido mucho.","Teo vuelve feliz a casa"]]},
+{id:2,t:"Galletas con la abuela",e:"🍪",p:[
+["📞","Llovía mucho y Nora no podía ir a casa de su abuela. Por eso la llamó por videollamada.","Nora llama a su abuela"],
+["🥣","La abuela le enseñó a mezclar harina, huevo y azúcar. Cada una lo hacía en su cocina.","Mezclan los ingredientes"],
+["🔥","Con ayuda de papá, Nora metió la bandeja al horno. Toda la casa empezó a oler delicioso.","Las galletas van al horno"],
+["📸","Nora y la abuela se sacaron una foto con sus galletas. Aunque estaban lejos, fue una tarde muy dulce.","Se hacen una foto con las galletas"]]}
+];
+const app=document.getElementById("app"),done=new Set(),can="speechSynthesis" in window;
+let st,page,order,hint,fixed;
+const sh=a=>{a=[...a];do{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}while(a.every((x,i)=>x===i)||a[0]===0);return a};
+function say(t){if(!can)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang="es-ES";u.rate=.85;speechSynthesis.speak(u)}
+function stop(){if(can)speechSynthesis.cancel()}
+function home(){stop();app.innerHTML=`<h1>📚 Cuentos para ordenar</h1><p class="sub">Elige un cuento. ¡Léelo y ordénalo!</p>`+S.map(s=>`<button class="story ghost" onclick="start(${s.id})"><span class="big">${s.e}</span><span>${s.t} ${done.has(s.id)?'<span class="tick">✔</span>':''}</span></button>`).join("")}
+function start(i){st=S[i];page=0;read()}
+function read(){const p=st.p[page],last=page===st.p.length-1;
+app.innerHTML=`<h1>${st.t}</h1><div class="dots">${st.p.map((_,i)=>`<i class="${i===page?'on':''}"></i>`).join("")}</div><div class="scene" aria-hidden="true">${p[0]}</div><div class="text">${p[1]}</div><div class="row">${can?`<button class="ghost" onclick="say(st.p[page][1])">🔊 Escuchar</button>`:""}</div><div class="row"><button class="ghost" onclick="${page?'page--;read()':'home()'}">${page?'⬅️ Atrás':'🏠 Inicio'}</button><button class="go" onclick="${last?'game()':'page++;read()'}">${last?'¡A ordenar! 🧩':'Seguir ➡️'}</button></div>`;scrollTo(0,0);stop()}
+function game(){order=sh(st.p.map((_,i)=>i));hint=0;fixed=new Set();draw("Ordena los dibujos como pasó en el cuento. Arrastra cada tarjeta o usa las flechas.")}
+function draw(m,ok=[]){stop();app.innerHTML=`<h1>🧩 ¿Qué pasó primero?</h1><div id="list">${order.map((k,i)=>`<div class="card ${ok.includes(i)?'ok':''}" data-i="${i}" tabindex="0"><span class="e">${st.p[k][0]}</span><span class="t">${st.p[k][2]}</span><span class="mv"><button aria-label="Subir" onclick="mv(${i},-1)">▲</button><button aria-label="Bajar" onclick="mv(${i},1)">▼</button></span></div>`).join("")}</div><div id="msg" role="status">${m}</div><div class="row"><button class="ghost" onclick="page=0;read()">📖 Leer otra vez</button><button class="go" onclick="check()">¡Listo! ✔</button></div>`;bind()}
+function mv(i,d){const j=i+d;if(j<0||j>=order.length||fixed.has(i)||fixed.has(j))return;[order[i],order[j]]=[order[j],order[i]];draw("");const c=document.querySelectorAll(".card")[j];c&&c.querySelector(d<0?"button":"button:last-child").focus()}
+function bind(){document.querySelectorAll(".card").forEach(c=>{c.addEventListener("pointerdown",e=>{if(e.target.closest("button")||fixed.has(+c.dataset.i))return;e.preventDefault();c.setPointerCapture(e.pointerId);const cs=[...document.querySelectorAll(".card")],i0=+c.dataset.i,y0=e.clientY;c.classList.add("drag");
+const mvf=ev=>{c.style.transform=`translateY(${ev.clientY-y0}px)`};
+const up=ev=>{c.removeEventListener("pointermove",mvf);c.removeEventListener("pointerup",up);c.removeEventListener("pointercancel",up);let t=i0;cs.forEach((o,i)=>{if(o===c)return;const r=o.getBoundingClientRect();if(i<i0&&ev.clientY<r.top+r.height/2&&i<t)t=i;if(i>i0&&ev.clientY>r.top+r.height/2&&i>t)t=i});
+if(t!==i0&&!fixed.has(t)){const[x]=order.splice(i0,1);order.splice(t,0,x)}draw("")};
+c.addEventListener("pointermove",mvf);c.addEventListener("pointerup",up);c.addEventListener("pointercancel",up)})})}
+function check(){const good=order.map((k,i)=>k===i);if(good.every(Boolean)){win();return}
+hint++;
+if(hint===1){draw("¡Buen intento! Fíjate bien: ¿qué pasó primero en el cuento? Puedes probar otra vez. 💪")}
+else if(hint===2){draw("¡Vas muy bien! Las tarjetas con borde verde ya están en su sitio. 🌟",good.map((g,i)=>g?i:-1).filter(i=>i>=0))}
+else if(hint===3){draw("Si quieres, lee el cuento otra vez con el botón 📖 y vuelve a intentarlo. ¡Tú puedes!",good.map((g,i)=>g?i:-1).filter(i=>i>=0))}
+else{const w=good.indexOf(false),k=order.indexOf(w);[order[w],order[k]]=[order[k],order[w]];fixed=new Set(order.map((x,i)=>x===i?i:-1).filter(i=>i>=0));if(order.every((x,i)=>x===i)){win();return}draw("Te he ayudado a poner una tarjeta en su sitio. ¡Ahora sigue tú! 🤝",[...fixed])}}
+function win(){stop();done.add(st.id);app.innerHTML=`<h1>¡Lo conseguiste!</h1><div class="party"><span>🎉</span><span>⭐</span><span>🎉</span></div><p class="sub">Ordenaste muy bien el cuento de <b>${st.t}</b>. ¡Qué buen lector!</p><div class="row"><button class="ghost" onclick="start(${st.id})">🔁 Repetir</button><button class="go" onclick="home()">📚 Otro cuento</button></div>`}
+home();
+</script>
+</body>
+</html>
